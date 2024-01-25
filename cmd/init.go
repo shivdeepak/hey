@@ -4,9 +4,13 @@ Copyright © 2024 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 // initCmd represents the init command
@@ -20,7 +24,64 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Printf("init called %t\n", Verbose)
+		possibleLlms := [4]string{"1", "2", "3", "4"}
+
+		llmSelection := ""
+
+		for llmSelection == "" {
+			fmt.Println("Which LLM would you like to configure?")
+			fmt.Println("[1] ChatGPT from OpenAI")
+			fmt.Println("[2] Perplexity")
+			fmt.Println("[3] Pi from Inflection.ai")
+			fmt.Println("[4] Claude from Anthropic")
+			fmt.Printf("Make a selection [Default 1]: ")
+			reader := bufio.NewReader(os.Stdin)
+			input, _ := reader.ReadString('\n')
+			input = strings.TrimSpace(input)
+
+			if input == "" {
+				input = "1"
+			}
+
+			for _, possibleLlm := range possibleLlms {
+				if possibleLlm == input {
+					llmSelection = input
+				}
+			}
+
+			if llmSelection == "" {
+				fmt.Println("\nInvalid input, please enter 1-4")
+			}
+		}
+
+		if llmSelection == "1" {
+			fmt.Println("You have selected ChatGPT from OpenAI")
+			openAiApiKey := ""
+
+			for openAiApiKey == "" {
+				fmt.Println("We need your OpenAI API Key to make requests to ChatGPT")
+				fmt.Println("This API Key will be stored locally on your machine")
+				fmt.Println("Your OpenAI API Key will have following format: sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+				fmt.Println("You can find your API key at https://platform.openai.com/account/api-keys")
+				fmt.Printf("Enter Your API Key: ")
+				reader := bufio.NewReader(os.Stdin)
+				input, _ := reader.ReadString('\n')
+				input = strings.TrimSpace(input)
+
+				if strings.HasPrefix(input, "sk-") && len(input) >= 50 {
+					openAiApiKey = input
+				} else {
+					fmt.Println("\nInvalid input, please enter a valid API Key")
+				}
+			}
+
+			initViperConfigFile()
+
+			viper.Set("llm.default", "chatgpt")
+			viper.Set("llm.chatgpt.api_key", openAiApiKey)
+			saveCurrentViperConfig()
+		}
+
 	},
 }
 

@@ -22,9 +22,18 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
+	"errors"
+	"fmt"
+	"io"
 	"os"
+	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
+	openai "github.com/sashabaranov/go-openai"
 )
 
 var cfgFile string
@@ -43,8 +52,50 @@ to quickly create a Cobra application.`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return nil
 	},
-	Run: func(cmd *cobra.Command, args []string) {
 
+	Run: func(cmd *cobra.Command, args []string) {
+		initViperConfigFile()
+
+		apiKey, ok := viper.Get("llm.chatgpt.api_key").(string)
+		if !ok {
+			log.Error().Msg("Unable to Retrieve OpenAI API Key")
+			os.Exit(1)
+		}
+
+		c := openai.NewClient(apiKey)
+		ctx := context.Background()
+		req := openai.ChatCompletionRequest{
+			Model:     openai.GPT3Dot5Turbo,
+			MaxTokens: 1024,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: strings.Join(args, " "),
+				},
+			},
+			Stream: true,
+		}
+		stream, err := c.CreateChatCompletionStream(ctx, req)
+		if err != nil {
+			fmt.Printf("ChatCompletionStream error: %v\n", err)
+			return
+		}
+		defer stream.Close()
+
+		for {
+			response, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				fmt.Println("\n")
+				return
+			}
+
+			if err != nil {
+				fmt.Printf("\nStream error: %v\n", err)
+				return
+			}
+
+			fmt.Printf(response.Choices[0].Delta.Content)
+		}
 	},
 }
 
