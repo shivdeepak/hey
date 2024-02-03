@@ -21,7 +21,7 @@ THE SOFTWARE.
 */
 package main
 
-import "hey/cmd"
+import "github.com/shivdeepak/hey/cmd"
 
 func main() {
 	cmd.Execute()

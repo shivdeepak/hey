@@ -1,4 +1,4 @@
-module hey
+module github.com/shivdeepak/hey
 
 go 1.21.6
 
